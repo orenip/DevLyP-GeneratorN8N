@@ -58,9 +58,10 @@ if (workflow.settings?.executionOrder !== 'v1') {
 
 // --- Validar meta ---
 if (!workflow.meta) {
-  warn(`Campo "meta" ausente. Recomendado incluir author, description, createdAt`);
+  error(`Campo "meta" obligatorio ausente. Debe incluir author, description, createdAt`);
 } else {
   if (!workflow.meta.description) warn(`meta.description vacío`);
+  if (!workflow.meta.author) warn(`meta.author vacío`);
 }
 
 // --- Validar nodos ---
@@ -111,8 +112,11 @@ if (!Array.isArray(workflow.nodes) || workflow.nodes.length === 0) {
     // Detectar trigger
     const triggerTypes = [
       'webhook', 'manualTrigger', 'scheduleTrigger', 'emailReadImap',
+      'errorTrigger', 'chatTrigger', 'formTrigger',
       'n8n-nodes-base.webhook', 'n8n-nodes-base.manualTrigger',
-      'n8n-nodes-base.scheduleTrigger'
+      'n8n-nodes-base.scheduleTrigger', 'n8n-nodes-base.errorTrigger',
+      'n8n-nodes-base.chatTrigger', 'n8n-nodes-base.formTrigger',
+      '@n8n/n8n-nodes-langchain.chatTrigger'
     ];
     if (triggerTypes.some(t => node.type?.includes(t))) {
       hasTrigger = true;

@@ -1,0 +1,123 @@
+{
+  "_plantilla": "rag-vectorstore",
+  "_descripcion": "Patrones RAG (Retrieval-Augmented Generation): indexar documentos y consultar con IA usando Vector Stores",
+
+  "_arquitectura_rag": {
+    "flujo_indexacion": "Obtener documentos → Document Loader → Text Splitter → Embeddings → Vector Store (insert)",
+    "flujo_consulta": "Chat/Webhook → AI Agent + Tool Vector Store QA → Respuesta fundamentada",
+    "_nota": "Son dos workflows separados. El de indexación corre una vez o periódicamente."
+  },
+
+  "document_loader": {
+    "_type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+    "_typeVersion": 1,
+    "_conexion": "ai_document → Text Splitter",
+    "dataType": "binary",
+    "loader": "auto",
+    "options": {
+      "metadata": {
+        "metadataValues": [
+          { "name": "source", "value": "={{ $json.nombre_documento }}" },
+          { "name": "fecha", "value": "={{ $now.toISO() }}" }
+        ]
+      }
+    }
+  },
+
+  "text_splitter_recursivo": {
+    "_type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+    "_typeVersion": 1,
+    "_conexion": "ai_textSplitter → Document Loader",
+    "chunkSize": 1000,
+    "chunkOverlap": 200
+  },
+
+  "embeddings_openai": {
+    "_type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+    "_typeVersion": 1.1,
+    "_conexion": "ai_embedding → Vector Store",
+    "model": "text-embedding-3-small",
+    "credentials": { "openAiApi": { "id": "...", "name": "OpenAI account" } }
+  },
+
+  "embeddings_gemini": {
+    "_type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+    "_typeVersion": 1,
+    "_conexion": "ai_embedding → Vector Store",
+    "modelName": "models/embedding-001",
+    "credentials": { "googleGeminiApi": { "id": "...", "name": "Google Gemini account" } }
+  },
+
+  "vector_store_supabase": {
+    "_type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+    "_typeVersion": 1,
+    "_modos": "insert (indexar) | retrieve (buscar)",
+    "mode": "insert",
+    "tableName": "documentos",
+    "queryName": "match_documentos",
+    "credentials": { "supabaseApi": { "id": "...", "name": "Supabase account" } },
+    "_sql_requerido": "CREATE TABLE documentos (id bigserial PRIMARY KEY, content text, metadata jsonb, embedding vector(1536)); CREATE OR REPLACE FUNCTION match_documentos(query_embedding vector, match_count int, filter jsonb DEFAULT '{}') RETURNS TABLE (id bigint, content text, metadata jsonb, similarity float) LANGUAGE plpgsql AS $$ BEGIN RETURN QUERY SELECT id, content, metadata, 1 - (embedding <=> query_embedding) AS similarity FROM documentos WHERE metadata @> filter ORDER BY embedding <=> query_embedding LIMIT match_count; END; $$;"
+  },
+
+  "vector_store_inmemory": {
+    "_type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+    "_typeVersion": 1.1,
+    "_nota": "Solo para testing. Se pierde al reiniciar el flujo.",
+    "mode": "insert"
+  },
+
+  "vector_store_pinecone": {
+    "_type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+    "_typeVersion": 1,
+    "mode": "insert",
+    "pineconeIndex": { "__rl": true, "value": "mi-indice", "mode": "list" },
+    "credentials": { "pineconeApi": { "id": "...", "name": "Pinecone account" } }
+  },
+
+  "qa_chain": {
+    "_type": "@n8n/n8n-nodes-langchain.chainRetrievalQa",
+    "_typeVersion": 1.4,
+    "_nota": "Alternativa más simple al AI Agent para RAG. Recibe pregunta y devuelve respuesta con fuentes.",
+    "query": "={{ $json.pregunta }}",
+    "options": {
+      "returnSourceDocuments": true
+    }
+  },
+
+  "tool_vector_store_qa": {
+    "_type": "@n8n/n8n-nodes-langchain.toolVectorStoreQA",
+    "_typeVersion": 1,
+    "_conexion": "ai_tool → AI Agent",
+    "name": "buscarEnDocumentos",
+    "description": "Busca información en la base de conocimiento de la empresa. Úsalo cuando necesites responder preguntas sobre productos, políticas, precios o procedimientos."
+  },
+
+  "patron_flujo_indexacion_completo": {
+    "_descripcion": "Workflow para cargar documentos al vector store",
+    "_nodos": [
+      "Manual Trigger o Schedule",
+      "HTTP Request / Google Drive: obtener documentos",
+      "Split Out: separar por documento",
+      "Set: preparar metadata (nombre, tipo, fecha)",
+      "Default Data Loader (sub-nodo)",
+      "Recursive Character Splitter (sub-nodo)",
+      "Embeddings OpenAI (sub-nodo)",
+      "Vector Store Supabase (modo insert)"
+    ]
+  },
+
+  "patron_flujo_consulta_rag": {
+    "_descripcion": "Workflow de chat con RAG",
+    "_nodos": [
+      "Chat Trigger o Webhook",
+      "AI Agent (toolsAgent)",
+      "Sub-nodos:",
+      "  - Chat OpenAI o Gemini (ai_languageModel)",
+      "  - Memory Buffer Window (ai_memory)",
+      "  - Tool: Vector Store QA (ai_tool) → conectado al mismo Vector Store",
+      "  - Embeddings OpenAI (ai_embedding en el Vector Store)"
+    ]
+  },
+
+  "variables_entorno_necesarias": ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY"]
+}

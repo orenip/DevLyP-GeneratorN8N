@@ -1,0 +1,151 @@
+{
+  "_plantilla": "slack-notion",
+  "_descripcion": "Patrones para Slack (mensajes, canales) y Notion (páginas, bases de datos)",
+
+  "slack_enviar_mensaje": {
+    "_type": "n8n-nodes-base.slack",
+    "_typeVersion": 2.3,
+    "resource": "message",
+    "operation": "post",
+    "channel": "={{ $json.canal }}",
+    "text": "={{ $json.mensaje }}",
+    "otherOptions": {
+      "mrkdwn": true,
+      "unfurl_links": false
+    }
+  },
+
+  "slack_mensaje_bloques": {
+    "_nota": "Usar Block Kit para mensajes ricos con botones, secciones, etc.",
+    "_type": "n8n-nodes-base.slack",
+    "_typeVersion": 2.3,
+    "resource": "message",
+    "operation": "post",
+    "channel": "C1234567890",
+    "blocksUi": {
+      "blocksValues": [
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "*{{ $json.titulo }}*\n{{ $json.descripcion }}"
+          }
+        },
+        {
+          "type": "actions",
+          "elements": [
+            {
+              "type": "button",
+              "text": { "type": "plain_text", "text": "Ver detalles" },
+              "url": "={{ $json.url }}"
+            }
+          ]
+        }
+      ]
+    }
+  },
+
+  "slack_webhook_evento": {
+    "_nota": "Slack envía eventos vía webhook. Requiere verificación de firma.",
+    "paths_datos": {
+      "tipo_evento": "{{ $json.body.type }}",
+      "canal": "{{ $json.body.event.channel }}",
+      "usuario": "{{ $json.body.event.user }}",
+      "texto": "{{ $json.body.event.text }}",
+      "timestamp": "{{ $json.body.event.ts }}"
+    },
+    "verificacion_challenge": "Si Slack envía un challenge de verificación: `$json.body.type === 'url_verification'`"
+  },
+
+  "slack_credentials": {
+    "tipo": "slackOAuth2Api",
+    "nombre": "Slack account"
+  },
+
+  "notion_crear_pagina": {
+    "_type": "n8n-nodes-base.notion",
+    "_typeVersion": 2.2,
+    "resource": "page",
+    "operation": "create",
+    "databaseId": {
+      "__rl": true,
+      "value": "={{ $env.NOTION_DB_ID }}",
+      "mode": "id"
+    },
+    "title": "={{ $json.titulo }}",
+    "propertiesUi": {
+      "propertyValues": [
+        {
+          "key": "Estado",
+          "type": "select",
+          "selectValue": "Pendiente"
+        },
+        {
+          "key": "Fecha",
+          "type": "date",
+          "dateValue": "={{ $now.toISOString() }}"
+        },
+        {
+          "key": "Descripción",
+          "type": "rich_text",
+          "textContent": "={{ $json.descripcion }}"
+        }
+      ]
+    }
+  },
+
+  "notion_buscar_paginas": {
+    "_type": "n8n-nodes-base.notion",
+    "_typeVersion": 2.2,
+    "resource": "databasePage",
+    "operation": "getAll",
+    "databaseId": {
+      "__rl": true,
+      "value": "={{ $env.NOTION_DB_ID }}",
+      "mode": "id"
+    },
+    "returnAll": false,
+    "limit": 10,
+    "filterType": "manual",
+    "filters": {
+      "conditions": [
+        {
+          "key": "Estado",
+          "condition": "select",
+          "selectValue": "Pendiente"
+        }
+      ]
+    }
+  },
+
+  "notion_actualizar_pagina": {
+    "_type": "n8n-nodes-base.notion",
+    "_typeVersion": 2.2,
+    "resource": "page",
+    "operation": "update",
+    "pageId": {
+      "__rl": true,
+      "value": "={{ $json.page_id }}",
+      "mode": "id"
+    },
+    "propertiesUi": {
+      "propertyValues": [
+        {
+          "key": "Estado",
+          "type": "select",
+          "selectValue": "Completado"
+        }
+      ]
+    }
+  },
+
+  "notion_credentials": {
+    "tipo": "notionApi",
+    "nombre": "Notion account"
+  },
+
+  "variables_entorno_necesarias": {
+    "notion": ["NOTION_DB_ID"],
+    "slack": ["SLACK_CHANNEL_ID (opcional, puede estar en credenciales)"]
+  }
+}

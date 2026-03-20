@@ -1,0 +1,131 @@
+{
+  "_plantilla": "ai-agent-tools",
+  "_descripcion": "Patrones para AI Agent con LangChain: modelos, memoria, herramientas (tools)",
+
+  "_arquitectura": {
+    "_nota": "El AI Agent necesita sub-nodos conectados mediante tipos especiales de connection",
+    "conexiones_especiales": {
+      "ai_languageModel": "modelo LLM (lmChatOpenAi, lmChatGoogleGemini)",
+      "ai_memory": "memoria de conversación (memoryBufferWindow, memoryPostgresChat)",
+      "ai_tool": "herramientas disponibles (toolCode, toolHttpRequest, toolWorkflow)"
+    }
+  },
+
+  "ai_agent_parametros": {
+    "_type": "@n8n/n8n-nodes-langchain.agent",
+    "_typeVersion": 1.8,
+    "agent": "conversationalAgent",
+    "promptType": "define",
+    "text": "={{ $json.mensaje_usuario }}",
+    "options": {
+      "systemMessage": "Eres un asistente útil de...\n\nResponde siempre en español.\nSé conciso y directo.",
+      "maxIterations": 10,
+      "returnIntermediateSteps": false
+    }
+  },
+
+  "modelo_openai": {
+    "_type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+    "_typeVersion": 1.2,
+    "_conexion": "ai_languageModel → AI Agent",
+    "model": "gpt-4o-mini",
+    "options": {
+      "temperature": 0.7,
+      "maxTokens": 2000
+    }
+  },
+
+  "modelo_gemini": {
+    "_type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+    "_typeVersion": 1.1,
+    "_conexion": "ai_languageModel → AI Agent",
+    "modelName": "models/gemini-2.0-flash",
+    "options": {
+      "temperature": 0.7,
+      "maxOutputTokens": 2048
+    }
+  },
+
+  "memoria_ventana": {
+    "_type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+    "_typeVersion": 1.3,
+    "_conexion": "ai_memory → AI Agent",
+    "_nota": "Mantiene los últimos N mensajes en memoria. Se pierde al reiniciar el flujo.",
+    "contextWindowLength": 10,
+    "sessionKey": "={{ $json.session_id }}"
+  },
+
+  "memoria_postgres": {
+    "_type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+    "_typeVersion": 1.1,
+    "_conexion": "ai_memory → AI Agent",
+    "_nota": "Memoria persistente en PostgreSQL/Supabase. Mejor para producción.",
+    "sessionKey": "={{ $json.session_id }}",
+    "sessionIdFromPreviousNode": true,
+    "tableName": "n8n_chat_histories"
+  },
+
+  "tool_http_request": {
+    "_type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+    "_typeVersion": 1.1,
+    "_conexion": "ai_tool → AI Agent",
+    "name": "consultarApi",
+    "description": "Consulta la API externa para obtener información sobre...",
+    "url": "https://api.ejemplo.com/endpoint",
+    "method": "GET",
+    "authentication": "none"
+  },
+
+  "tool_code": {
+    "_type": "@n8n/n8n-nodes-langchain.toolCode",
+    "_typeVersion": 1.1,
+    "_conexion": "ai_tool → AI Agent",
+    "name": "calcularFecha",
+    "description": "Calcula diferencias de fechas o formatea fechas. Input: objeto JSON con 'fecha_inicio' y 'fecha_fin'",
+    "jsCode": "const { fecha_inicio, fecha_fin } = JSON.parse(query);\nconst diff = new Date(fecha_fin) - new Date(fecha_inicio);\nconst dias = Math.floor(diff / (1000 * 60 * 60 * 24));\nreturn `Diferencia: ${dias} días`;"
+  },
+
+  "tool_workflow": {
+    "_type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+    "_typeVersion": 1.2,
+    "_conexion": "ai_tool → AI Agent",
+    "name": "buscarEnBaseDeDatos",
+    "description": "Busca información en la base de datos. Input: texto con el término a buscar",
+    "workflowId": { "__rl": true, "value": "={{ $env.SUBWORKFLOW_SEARCH_ID }}", "mode": "id" }
+  },
+
+  "patron_chat_con_memoria": {
+    "_descripcion": "Flujo de chat completo: Chat Trigger → AI Agent + Modelo + Memoria",
+    "_nodos": [
+      "Chat Trigger (@n8n/n8n-nodes-langchain.chatTrigger)",
+      "AI Agent (@n8n/n8n-nodes-langchain.agent)",
+      "Chat OpenAI Model (sub-nodo)",
+      "Memory Buffer Window (sub-nodo)"
+    ],
+    "_conexiones": {
+      "Chat Trigger": { "main": [["AI Agent"]] },
+      "Chat OpenAI Model": { "ai_languageModel": [["AI Agent"]] },
+      "Memory Buffer Window": { "ai_memory": [["AI Agent"]] }
+    }
+  },
+
+  "patron_posicionamiento_subnodos": {
+    "_nota": "Sub-nodos AI se posicionan DEBAJO del AI Agent, no a la derecha",
+    "ai_agent":   [750, 300],
+    "modelo_llm": [750, 550],
+    "memoria":    [1000, 550],
+    "tool_1":     [500, 550],
+    "tool_2":     [500, 750]
+  },
+
+  "variables_entorno_necesarias": {
+    "openai": ["OPENAI_API_KEY"],
+    "gemini": ["GEMINI_API_KEY"],
+    "memoria_postgres": ["POSTGRES_HOST", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD"]
+  },
+
+  "credentials": {
+    "openai": { "tipo": "openAiApi", "nombre": "OpenAI account" },
+    "gemini": { "tipo": "googleGeminiApi", "nombre": "Google Gemini account" }
+  }
+}

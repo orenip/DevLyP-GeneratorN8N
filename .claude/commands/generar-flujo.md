@@ -23,9 +23,14 @@ Gestión de errores: <dónde y cómo>
 Espera confirmación del usuario antes de generar.
 
 ### Paso 3: Generar
-- Leer plantillas relevantes de `plantillas/`
+- Consultar `plantillas/casos-uso-populares.json` para ver si hay un patrón aplicable
+- Leer plantillas relevantes de `plantillas/` según las integraciones necesarias
+- Consultar el skill `n8n-expert` para typeVersions correctas y patrones de expresiones
 - Generar JSON completo con todos los campos obligatorios
 - Cada nodo con UUID v4 único, typeVersion correcto, posición distribuida
+- Para bots de mensajería (Telegram/WhatsApp): usar `responseMode: "onReceived"` SIEMPRE
+- Para flujos con IA: consultar `plantillas/ai-agent-tools.json`
+- Para RAG/conocimiento: consultar `plantillas/rag-vectorstore.json`
 
 ### Paso 4: Validar
 ```bash

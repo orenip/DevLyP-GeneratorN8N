@@ -1,0 +1,88 @@
+{
+  "_plantilla": "telegram-bot",
+  "_descripcion": "Patrones para bots de Telegram: recibir mensajes vía webhook y enviar respuestas",
+
+  "webhook_entrada": {
+    "_nota": "Configurar el webhook de Telegram apuntando al Webhook node de n8n",
+    "_configurar_con": "https://api.telegram.org/bot<TOKEN>/setWebhook?url=<TU_N8N_URL>/webhook/<PATH>",
+    "paths_datos": {
+      "chat_id": "{{ $json.body.message.chat.id }}",
+      "mensaje_texto": "{{ $json.body.message.text }}",
+      "username": "{{ $json.body.message.from.username }}",
+      "nombre": "{{ $json.body.message.from.first_name }}",
+      "callback_data": "{{ $json.body.callback_query.data }}",
+      "tipo_update": "message | callback_query | inline_query"
+    }
+  },
+
+  "enviar_mensaje_texto": {
+    "_nodo": "Telegram",
+    "_type": "n8n-nodes-base.telegram",
+    "_typeVersion": 1.2,
+    "resource": "message",
+    "operation": "sendMessage",
+    "chatId": "={{ $json.chat_id }}",
+    "text": "={{ $json.respuesta }}",
+    "additionalFields": {
+      "parse_mode": "HTML",
+      "disable_notification": false
+    }
+  },
+
+  "enviar_con_botones": {
+    "_type": "n8n-nodes-base.telegram",
+    "_typeVersion": 1.2,
+    "resource": "message",
+    "operation": "sendMessage",
+    "chatId": "={{ $json.chat_id }}",
+    "text": "¿Qué deseas hacer?",
+    "additionalFields": {
+      "parse_mode": "HTML",
+      "reply_markup": {
+        "inline_keyboard": [
+          [
+            { "text": "Opción 1", "callback_data": "opcion_1" },
+            { "text": "Opción 2", "callback_data": "opcion_2" }
+          ]
+        ]
+      }
+    }
+  },
+
+  "enviar_documento": {
+    "_type": "n8n-nodes-base.telegram",
+    "_typeVersion": 1.2,
+    "resource": "message",
+    "operation": "sendDocument",
+    "chatId": "={{ $json.chat_id }}",
+    "binaryData": false,
+    "file": "={{ $json.url_documento }}",
+    "additionalFields": {
+      "caption": "={{ $json.descripcion }}"
+    }
+  },
+
+  "filtros_comunes": {
+    "solo_mensajes_texto": "{{ $json.body.message?.text !== undefined }}",
+    "solo_callbacks": "{{ $json.body.callback_query !== undefined }}",
+    "solo_comandos": "{{ $json.body.message?.text?.startsWith('/') }}",
+    "comando_especifico": "{{ $json.body.message.text === '/start' }}"
+  },
+
+  "patron_respuesta_inmediata_telegram": {
+    "_nota": "Telegram requiere respuesta 200 para no reintentar. Usar responseMode: onReceived en Webhook",
+    "webhook_config": {
+      "responseMode": "onReceived",
+      "responseCode": 200
+    }
+  },
+
+  "credentials": {
+    "tipo": "telegramApi",
+    "campos": { "accessToken": "TOKEN_DEL_BOT_DESDE_BOTFATHER" }
+  },
+
+  "variables_entorno_necesarias": [
+    "TELEGRAM_BOT_TOKEN (si se usa vía HTTP Request directo)"
+  ]
+}

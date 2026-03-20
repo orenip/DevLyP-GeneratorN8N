@@ -1,0 +1,152 @@
+{
+  "_plantilla": "casos-uso-populares",
+  "_descripcion": "Patrones completos de los flujos más demandados según la comunidad n8n y awesome-n8n-templates",
+
+  "caso_1_email_ai_clasificador": {
+    "_nombre": "Clasificador y respondedor automático de emails con IA",
+    "_trigger": "Gmail Trigger (email entrante)",
+    "_patron": [
+      "Gmail Trigger → Information Extractor (extraer: nombre, empresa, asunto, intención)",
+      "→ Text Classifier (categorías: consulta, presupuesto, soporte, spam)",
+      "→ Switch por categoría:",
+      "  presupuesto: Set datos → Notion crear página → Slack notificar equipo ventas",
+      "  consulta: AI Agent (redactar respuesta) → Gmail: crear borrador",
+      "  soporte: HubSpot crear ticket → Gmail responder con número de ticket",
+      "  spam: NoOp"
+    ],
+    "_nodos_clave": ["gmail", "informationExtractor", "textClassifier", "switch", "notion", "slack", "agent"],
+    "_variables": ["OPENAI_API_KEY", "NOTION_DB_ID", "SLACK_CHANNEL_SOPORTE"]
+  },
+
+  "caso_2_lead_scoring": {
+    "_nombre": "Calificación automática de leads con IA",
+    "_trigger": "Webhook desde formulario web / CRM",
+    "_patron": [
+      "Webhook → IF validar datos mínimos (nombre, email, empresa)",
+      "→ HTTP Request: enriquecer datos (Clearbit / Hunter.io)",
+      "→ AI Agent: evaluar lead (sector, tamaño empresa, presupuesto, urgencia)",
+      "→ IF score >= 70?",
+      "  → Sí (hot lead): HubSpot crear deal + Slack notificar comercial + Gmail email personalizado",
+      "  → No (cold lead): Mailchimp añadir a secuencia nurturing + Supabase registrar",
+      "→ Respond to Webhook 200"
+    ],
+    "_nodos_clave": ["webhook", "if", "httpRequest", "agent", "hubspot", "slack", "gmail", "supabase"],
+    "_variables": ["OPENAI_API_KEY", "HUBSPOT_API_KEY", "SLACK_CHANNEL_VENTAS", "SUPABASE_URL"]
+  },
+
+  "caso_3_ecommerce_carrito_abandonado": {
+    "_nombre": "Recuperación de carrito abandonado multicanal",
+    "_trigger": "Webhook desde Shopify/WooCommerce (evento checkout abandonado)",
+    "_patron": [
+      "Webhook Shopify (abandoned_checkout) → Respond to Webhook 200 inmediato",
+      "→ Wait 1 hora",
+      "→ IF ¿completó la compra? (consultar Supabase/Shopify API)",
+      "  → Sí: NoOp (ya compró)",
+      "  → No: Gmail enviar recordatorio personalizado con IA",
+      "→ Wait 48 horas",
+      "→ IF ¿completó la compra?",
+      "  → No: Twilio SMS con descuento 10% / WhatsApp Evolution API",
+      "  → Sí: NoOp"
+    ],
+    "_nodos_clave": ["webhook", "respondToWebhook", "wait", "if", "httpRequest", "gmail", "twilio"],
+    "_variables": ["SHOPIFY_API_KEY", "EVOLUTION_HOST", "EVOLUTION_INSTANCE", "EVOLUTION_API_KEY", "OPENAI_API_KEY"]
+  },
+
+  "caso_4_monitor_ssl_alertas": {
+    "_nombre": "Monitor de certificados SSL y alertas",
+    "_trigger": "Schedule Trigger (diariamente a las 8:00)",
+    "_patron": [
+      "Schedule → Google Sheets: obtener lista de dominios a monitorizar",
+      "→ SplitInBatches (5 por lote)",
+      "  → HTTP Request: consultar estado SSL (api.ssllabs.com o similar)",
+      "  → IF: vence en menos de 30 días?",
+      "    → Sí: Set preparar alerta con días restantes",
+      "  → Merge",
+      "→ Filter: solo los que tienen alerta",
+      "→ IF hay alertas?",
+      "  → Sí: Slack enviar resumen + Gmail email detallado al equipo IT"
+    ],
+    "_nodos_clave": ["scheduleTrigger", "googleSheets", "splitInBatches", "httpRequest", "if", "filter", "slack"],
+    "_variables": ["SLACK_CHANNEL_IT", "GOOGLE_SHEETS_ID"]
+  },
+
+  "caso_5_contenido_wordpress_ai": {
+    "_nombre": "Generador automático de contenido para WordPress con IA",
+    "_trigger": "Schedule o Manual / Google Sheets con ideas de artículos",
+    "_patron": [
+      "Google Sheets: obtener fila con estado 'pendiente'",
+      "→ Google Sheets: marcar como 'procesando'",
+      "→ AI Agent: generar artículo (título SEO, introducción, secciones, conclusión, meta description)",
+      "→ HTTP Request: publicar en WordPress (endpoint /wp-json/wp/v2/posts)",
+      "→ IF publicación exitosa?",
+      "  → Sí: Google Sheets actualizar estado 'publicado' + URL",
+      "  → No: Google Sheets marcar 'error' + Slack notificar"
+    ],
+    "_nodos_clave": ["scheduleTrigger", "googleSheets", "agent", "httpRequest", "if", "slack"],
+    "_variables": ["OPENAI_API_KEY", "WORDPRESS_URL", "WORDPRESS_APP_PASSWORD", "SHEETS_DOC_ID"]
+  },
+
+  "caso_6_telegram_bot_empresa": {
+    "_nombre": "Bot de Telegram para atención al cliente con IA y memoria",
+    "_trigger": "Webhook (Telegram envía mensajes aquí)",
+    "_patron": [
+      "Webhook (responseMode: onReceived) → Respond to Webhook 200",
+      "→ IF es mensaje de texto? ($json.body.message?.text)",
+      "  → No: ignorar (NoOp)",
+      "  → Sí:",
+      "    → IF es comando /start?",
+      "      → Sí: Set mensaje bienvenida → Telegram sendMessage",
+      "      → No:",
+      "        → Set extraer chat_id y texto",
+      "        → AI Agent (toolsAgent) con:",
+      "          - Chat OpenAI o Gemini (modelo)",
+      "          - Memory Postgres (memoria persistente por chat_id)",
+      "          - Tool: Workflow (consultar FAQ / productos en Supabase)",
+      "        → Telegram sendMessage con respuesta"
+    ],
+    "_nodos_clave": ["webhook", "respondToWebhook", "if", "set", "telegram", "agent", "memoryPostgresChat"],
+    "_variables": ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY", "POSTGRES_*"]
+  },
+
+  "caso_7_pipeline_etl": {
+    "_nombre": "Pipeline ETL: Extraer, Transformar, Cargar datos",
+    "_trigger": "Schedule Trigger (nightly) o Webhook",
+    "_patron": [
+      "Schedule → HTTP Request: obtener datos de API fuente",
+      "→ Code: limpiar y transformar datos (normalizar fechas, tipos, etc.)",
+      "→ Remove Duplicates (campo clave: id o email)",
+      "→ SplitInBatches (100 por lote)",
+      "  → Postgres / Supabase: INSERT ON CONFLICT UPDATE",
+      "  → Wait 100ms (respetar rate limits)",
+      "→ Done: Aggregate estadísticas",
+      "→ Set preparar reporte → Slack/Email: enviar reporte"
+    ],
+    "_nodos_clave": ["scheduleTrigger", "httpRequest", "code", "removeDuplicates", "splitInBatches", "postgres", "wait", "aggregate"],
+    "_variables": ["SOURCE_API_KEY", "POSTGRES_HOST", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD"]
+  },
+
+  "caso_8_zoom_meeting_assistant": {
+    "_nombre": "Asistente de reuniones: transcripción → resumen → acciones",
+    "_trigger": "Webhook (Zoom/Fireflies webhook al terminar reunión)",
+    "_patron": [
+      "Webhook Zoom/Fireflies → Respond to Webhook 200",
+      "→ HTTP Request: obtener transcripción completa",
+      "→ AI Agent: extraer resumen ejecutivo, puntos clave, action items con responsables",
+      "→ Notion: crear página con resumen en base de datos de reuniones",
+      "→ Gmail: enviar email a participantes con resumen",
+      "→ Slack: notificar en canal del equipo con link a Notion"
+    ],
+    "_nodos_clave": ["webhook", "httpRequest", "agent", "notion", "gmail", "slack"],
+    "_variables": ["OPENAI_API_KEY", "NOTION_DB_ID", "SLACK_CHANNEL_EQUIPO"]
+  },
+
+  "instrucciones_generacion": {
+    "_nota": "Al generar un flujo de estos tipos, SIEMPRE:",
+    "1": "Leer plantilla del caso de uso específico",
+    "2": "Leer plantillas de integraciones necesarias (telegram-bot.json, ai-agent-tools.json, etc.)",
+    "3": "Incluir IF de validación al inicio para webhooks",
+    "4": "Incluir continueOnFail en HTTP Requests externos",
+    "5": "Incluir Sticky Note con vars de entorno necesarias",
+    "6": "Para bots de mensajería: responseMode onReceived SIEMPRE"
+  }
+}

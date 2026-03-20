@@ -1,0 +1,149 @@
+{
+  "_plantilla": "loop-batch-errores",
+  "_descripcion": "Patrones para procesamiento en lotes, bucles, manejo centralizado de errores y sub-workflows",
+
+  "split_in_batches": {
+    "_type": "n8n-nodes-base.splitInBatches",
+    "_typeVersion": 3,
+    "_nota": "Divide un array de items en grupos de N para procesarlos sin sobrecargar APIs",
+    "batchSize": 10,
+    "options": {
+      "reset": false
+    },
+    "_conexiones": {
+      "loop_salida_0": "nodo de procesamiento (se repite)",
+      "done_salida_1": "nodo siguiente al bucle"
+    }
+  },
+
+  "filter_node": {
+    "_type": "n8n-nodes-base.filter",
+    "_typeVersion": 2,
+    "_nota": "Filtra items que NO cumplen la condición. Los que SÍ cumplen pasan adelante.",
+    "conditions": {
+      "options": {
+        "caseSensitive": false,
+        "leftValue": "",
+        "typeValidation": "loose"
+      },
+      "conditions": [
+        {
+          "id": "<uuid>",
+          "leftValue": "={{ $json.activo }}",
+          "rightValue": true,
+          "operator": {
+            "type": "boolean",
+            "operation": "true"
+          }
+        }
+      ],
+      "combinator": "and"
+    }
+  },
+
+  "aggregate_node": {
+    "_type": "n8n-nodes-base.aggregate",
+    "_typeVersion": 1,
+    "_nota": "Combina múltiples items en uno solo",
+    "aggregate": "aggregateAllItemData",
+    "destinationFieldName": "todos_los_datos",
+    "options": {}
+  },
+
+  "remove_duplicates": {
+    "_type": "n8n-nodes-base.removeDuplicates",
+    "_typeVersion": 1,
+    "compare": "selectedFields",
+    "fieldsToCompare": {
+      "fields": [
+        { "fieldName": "email" }
+      ]
+    },
+    "options": {}
+  },
+
+  "error_trigger_global": {
+    "_descripcion": "Crear un workflow separado para capturar errores de todos los flujos",
+    "_type": "n8n-nodes-base.errorTrigger",
+    "_typeVersion": 1,
+    "_posicion": [250, 300],
+    "parameters": {},
+    "_datos_disponibles": {
+      "execution_id": "{{ $json.execution.id }}",
+      "execution_error": "{{ $json.execution.error.message }}",
+      "execution_error_stack": "{{ $json.execution.error.stack }}",
+      "workflow_id": "{{ $json.workflow.id }}",
+      "workflow_name": "{{ $json.workflow.name }}",
+      "timestamp": "{{ $json.execution.startedAt }}"
+    },
+    "_patron_recomendado": [
+      "Error Trigger",
+      "Set: formatear mensaje de error",
+      "Telegram/Slack: notificar al equipo",
+      "Supabase/Sheets: registrar en log de errores"
+    ]
+  },
+
+  "stop_and_error": {
+    "_type": "n8n-nodes-base.stopAndError",
+    "_typeVersion": 1,
+    "_nota": "Detiene el flujo y lanza un error con mensaje personalizado",
+    "errorMessage": "={{ 'Error en proceso: ' + $json.motivo }}"
+  },
+
+  "execute_workflow": {
+    "_type": "n8n-nodes-base.executeWorkflow",
+    "_typeVersion": 1.1,
+    "_nota": "Ejecuta un sub-workflow. Útil para modularizar flujos complejos.",
+    "source": "database",
+    "workflowId": {
+      "__rl": true,
+      "value": "={{ $env.SUBWORKFLOW_ID }}",
+      "mode": "id"
+    },
+    "options": {
+      "waitForSubWorkflow": true
+    }
+  },
+
+  "patron_procesamiento_lista": {
+    "_descripcion": "Patrón para procesar una lista de items con control de errores",
+    "_flujo": [
+      "1. Webhook/Trigger recibe datos",
+      "2. IF: validar que viene la lista",
+      "3. SplitInBatches: dividir en grupos de 10",
+      "   - Loop: HTTP Request a API externa (continueOnFail: true)",
+      "   - IF: detectar error en respuesta",
+      "     - Error: Set datos de error + continuar",
+      "     - OK: procesar resultado",
+      "   - Merge: juntar resultados",
+      "   - Done: siguiente paso",
+      "4. Aggregate: combinar todos los resultados",
+      "5. Set: preparar respuesta final",
+      "6. Respond to Webhook"
+    ]
+  },
+
+  "patron_retry_con_wait": {
+    "_descripcion": "Reintentar una llamada API que puede fallar temporalmente",
+    "_flujo": [
+      "1. HTTP Request (continueOnFail: true)",
+      "2. IF: ¿tiene error o status !== 200?",
+      "   - Sí: IF ¿intentos < 3?",
+      "     - Sí: Set incrementar contador + Wait 30s → volver al HTTP Request",
+      "     - No: Stop and Error 'Máximo de reintentos alcanzado'",
+      "   - No: continuar con el resultado"
+    ]
+  },
+
+  "http_con_continue_on_fail": {
+    "_nota": "Configurar continueOnFail para manejar errores HTTP manualmente",
+    "_en_nodo_http": {
+      "onError": "continueRegularOutput"
+    },
+    "_detectar_error_en_if": {
+      "condicion": "{{ $json.error !== undefined }}",
+      "alternativa": "{{ $response.statusCode >= 400 }}"
+    }
+  }
+}

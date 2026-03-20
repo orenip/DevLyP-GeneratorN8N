@@ -29,6 +29,14 @@ Cada JSON generado debe poder importarse directamente en n8n sin errores y funci
 | OpenAI / Gemini | plantillas/gemini-openai.json | HTTP Request o OpenAI node |
 | Supabase / PostgreSQL | plantillas/supabase-postgres.json | Postgres node / HTTP Request |
 | Stripe | plantillas/stripe.json | HTTP Request + Webhook |
+| Telegram Bot | plantillas/telegram-bot.json | Telegram node |
+| Slack | plantillas/slack-notion.json | Slack node |
+| Notion | plantillas/slack-notion.json | Notion node |
+| AI Agent con tools y memoria | plantillas/ai-agent-tools.json | LangChain Agent |
+| Loop / Procesamiento en lotes | plantillas/loop-batch-errores.json | SplitInBatches |
+| Manejo de errores centralizado | plantillas/loop-batch-errores.json | Error Trigger |
+| RAG / Vector Store / Base de conocimiento | plantillas/rag-vectorstore.json | LangChain Chain + VectorStore |
+| Casos de uso populares (email IA, lead scoring, ecommerce, ETL...) | plantillas/casos-uso-populares.json | Múltiples |
 
 ## Proceso obligatorio para generar un flujo
 
@@ -82,6 +90,11 @@ Todo flujo DEBE incluir al mínimo:
 - En flujos con webhooks: validación de payload antes de procesar
 - En flujos con LLMs: manejo de respuesta vacía o error de API
 
+## Comandos disponibles
+
+- `/generar-flujo` — Genera un workflow nuevo desde cero
+- `/debug-flujo` — Diagnóstica y repara un workflow existente
+
 ## Cuando el usuario diga "generar flujo" o use /generar-flujo
 1. Pedir descripción si no se ha dado
 2. Pedir nombre del proyecto (o confirmar si ya existe)
@@ -95,10 +108,10 @@ Un proyecto puede tener múltiples ficheros JSON (múltiples flujos).
 Ejemplo:
 ```
 flujos/
-  arco-valoraciones/
+  taller/
     webhook-recepcion-encargos.json
-    notificacion-whatsapp-tasador.json
-  gesbod/
+    notificacion-whatsapp-cliente.json
+  tienda/
     stripe-webhook-pago.json
-    email-confirmacion-boda.json
+    email-confirmacion-pedido.json
 ```
