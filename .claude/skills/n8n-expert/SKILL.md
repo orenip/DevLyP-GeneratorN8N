@@ -109,6 +109,28 @@ description: >
 | Google Tasks | `n8n-nodes-base.googleTasks` | 1 |
 | YouTube | `n8n-nodes-base.youTube` | 1 |
 
+### WhatsApp — Evolution API (Community Node)
+| Nodo | type | typeVersion |
+|---|---|---|
+| Evolution API | `n8n-nodes-evolution-api.evolutionApi` | 1 |
+
+**Instalar:** n8n > Settings > Community Nodes > `n8n-nodes-evolution-api`
+**Credencial:** `evolutionApi` (contiene apiUrl y apiKey)
+**Parámetros clave para enviar texto:**
+```json
+{
+  "resource": "messages-api",
+  "operation": "send-text",
+  "instanceName": "={{ $env.EVOLUTION_INSTANCE }}",
+  "remoteJid": "={{ $json.telefono }}",
+  "messageText": "={{ $json.mensaje }}",
+  "options_message": { "delay": 1200 }
+}
+```
+**Operaciones messages-api:** `send-text`, `send-image`, `send-video`, `send-audio`, `send-document`, `send-poll`, `send-contact`, `send-list`, `send-buttons`, `send-reaction`
+**Otros recursos:** `chat`, `groups`, `instances`, `events`, `integrations`
+**IMPORTANTE:** Usar SIEMPRE este nodo nativo. NUNCA HTTP Request para Evolution API.
+
 ### Mensajería y comunicación
 | Nodo | type | typeVersion |
 |---|---|---|
@@ -164,7 +186,24 @@ description: >
 | Nodo | type | typeVersion |
 |---|---|---|
 | Chat OpenAI Model | `@n8n/n8n-nodes-langchain.lmChatOpenAi` | 1.2 |
-| Chat Gemini Model | `@n8n/n8n-nodes-langchain.lmChatGoogleGemini` | 1.1 |
+| Chat Gemini Model | `@n8n/n8n-nodes-langchain.lmChatGoogleGemini` | 1 |
+
+**Gemini — configuración correcta confirmada en producción:**
+```json
+{
+  "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+  "typeVersion": 1,
+  "parameters": { "options": {} },
+  "credentials": {
+    "googlePalmApi": {
+      "id": "...",
+      "name": "Google Gemini(PaLM) Api account"
+    }
+  }
+}
+```
+**Credential type:** `googlePalmApi` (NO `googleGeminiApi`)
+**Nombre de credencial en n8n:** `Google Gemini(PaLM) Api account`
 | Chat Anthropic | `@n8n/n8n-nodes-langchain.lmChatAnthropic` | 1.4 |
 | Chat Ollama | `@n8n/n8n-nodes-langchain.lmChatOllama` | 1 |
 | Chat Mistral | `@n8n/n8n-nodes-langchain.lmChatMistralCloud` | 1 |
@@ -176,6 +215,19 @@ description: >
 | Nodo | type | typeVersion |
 |---|---|---|
 | Memory Buffer Window | `@n8n/n8n-nodes-langchain.memoryBufferWindow` | 1.3 |
+
+**CRÍTICO — Memory Buffer Window fuera de Chat Trigger:**
+Cuando se usa con Webhook (no con Chat Trigger), SIEMPRE añadir `sessionIdType: "customKey"`, si no el nodo busca un campo `sessionId` en el input y falla:
+```json
+{
+  "parameters": {
+    "sessionIdType": "customKey",
+    "sessionKey": "={{ $json.telefono }}",
+    "contextWindowLength": 10
+  }
+}
+```
+Sin `sessionIdType: "customKey"` → error: *"No session ID found"*
 | Memory Postgres Chat | `@n8n/n8n-nodes-langchain.memoryPostgresChat` | 1.1 |
 | Memory Redis Chat | `@n8n/n8n-nodes-langchain.memoryRedisChat` | 1.1 |
 | Memory MongoDB Chat | `@n8n/n8n-nodes-langchain.memoryMongoDbChat` | 1.1 |
@@ -936,6 +988,37 @@ Webhook → IF validar payload → Obtener lista (Sheets/Supabase)
     + Tool: HTTP Request (info en tiempo real si necesario)
     + Memoria: Buffer Window
 ```
+
+---
+
+## REGLA FUNDAMENTAL: NODO NATIVO SIEMPRE
+
+**SIEMPRE usar el nodo nativo cuando existe. NUNCA sustituirlo por HTTP Request.**
+
+| Servicio | Nodo nativo | Package |
+|---|---|---|
+| Evolution API (WhatsApp) | `n8n-nodes-evolution-api.evolutionApi` | community: n8n-nodes-evolution-api |
+| Telegram | `n8n-nodes-base.telegram` | built-in |
+| Slack | `n8n-nodes-base.slack` | built-in |
+| Discord | `n8n-nodes-base.discord` | built-in |
+| Gmail | `n8n-nodes-base.gmail` | built-in |
+| Google Sheets | `n8n-nodes-base.googleSheets` | built-in |
+| Google Drive | `n8n-nodes-base.googleDrive` | built-in |
+| Notion | `n8n-nodes-base.notion` | built-in |
+| Airtable | `n8n-nodes-base.airtable` | built-in |
+| Stripe | `n8n-nodes-base.stripe` | built-in |
+| HubSpot | `n8n-nodes-base.hubspot` | built-in |
+| Shopify | `n8n-nodes-base.shopify` | built-in |
+| Postgres | `n8n-nodes-base.postgres` | built-in |
+| Supabase | `n8n-nodes-base.supabase` | built-in |
+| MongoDB | `n8n-nodes-base.mongoDb` | built-in |
+| Redis | `n8n-nodes-base.redis` | built-in |
+| Twilio | `n8n-nodes-base.twilio` | built-in |
+| GitHub | `n8n-nodes-base.github` | built-in |
+| Jira | `n8n-nodes-base.jira` | built-in |
+| Trello | `n8n-nodes-base.trello` | built-in |
+
+**HTTP Request SOLO para:** APIs sin nodo nativo o community node disponible (Gemini directo, APIs propias, etc.)
 
 ---
 

@@ -12,10 +12,13 @@ Generador de workflows n8n mediante Claude Code. Describe en lenguaje natural lo
 
 ```bash
 # Clonar/copiar el proyecto
-cd n8n-flow-generator
+cd DevLyP-GeneratorN8N
 
 # Verificar que el validador funciona
 node validador.js --help
+
+# Validar un flujo generado
+node validador.js flujos/mi-proyecto/mi-flujo.json
 ```
 
 ## Uso desde Claude Code en VSCode
@@ -51,7 +54,13 @@ n8n-flow-generator/
 │   ├── gmail-sheets.json
 │   ├── gemini-openai.json
 │   ├── supabase-postgres.json
-│   └── stripe.json
+│   ├── stripe.json
+│   ├── telegram-bot.json
+│   ├── ai-agent-tools.json
+│   ├── slack-notion.json
+│   ├── loop-batch-errores.json
+│   ├── rag-vectorstore.json
+│   └── casos-uso-populares.json
 ├── validador.js                 ← Validación automática de JSONs
 └── README.md
 ```

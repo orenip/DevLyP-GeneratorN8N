@@ -21,9 +21,27 @@ function ok(msg)    { console.log(`✅ ${msg}`); }
 
 // --- Leer fichero ---
 const filePath = process.argv[2];
-if (!filePath) {
-  console.error('Uso: node validador.js <ruta-fichero.json>');
-  process.exit(1);
+if (!filePath || filePath === '--help' || filePath === '-h') {
+  console.log(`
+Validador de workflows n8n — DevLyP
+
+Uso:
+  node validador.js <ruta-fichero.json>
+
+Ejemplos:
+  node validador.js flujos/taller/webhook-recepcion-encargos.json
+  node validador.js flujos/tienda/stripe-webhook-pago.json
+
+Qué valida:
+  ✔ Estructura JSON válida
+  ✔ Campos raíz obligatorios (name, nodes, connections, settings, meta)
+  ✔ Nodo trigger presente
+  ✔ Manejo de errores (IF, Switch, errorTrigger)
+  ✔ Cada nodo: id UUID v4 único, name único, type, typeVersion, position, parameters
+  ✔ Connections sin referencias rotas
+  ✔ Secrets hardcodeados (sk-*, Bearer tokens, passwords)
+  `);
+  process.exit(0);
 }
 
 const absolutePath = path.resolve(filePath);

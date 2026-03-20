@@ -1,49 +1,117 @@
 {
   "_plantilla": "whatsapp-evolution",
-  "_descripcion": "Plantilla base para recibir y responder mensajes WhatsApp via Evolution API",
-  "_nodos_incluidos": ["Webhook Evolution", "IF Tipo Mensaje", "Extraer Datos", "Enviar Respuesta WhatsApp"],
-  "patron_webhook_entrada": {
-    "numero_remitente": "$json.body.data.key.remoteJid",
-    "mensaje_texto": "$json.body.data.message.conversation",
-    "mensaje_imagen": "$json.body.data.message.imageMessage.caption",
-    "tipo_evento": "$json.body.event",
-    "nombre_remitente": "$json.body.data.pushName",
-    "instancia": "$json.body.instance"
-  },
-  "patron_envio_texto": {
-    "method": "POST",
-    "url": "https://={{ $env.EVOLUTION_HOST }}/message/sendText/={{ $env.EVOLUTION_INSTANCE }}",
-    "headers": {
-      "apikey": "={{ $env.EVOLUTION_API_KEY }}",
-      "Content-Type": "application/json"
+  "_descripcion": "Plantilla base para recibir y enviar mensajes WhatsApp via Evolution API usando el nodo nativo de n8n",
+  "_nodo_nativo": "n8n-nodes-evolution-api.evolutionApi (instalar desde Community Nodes)",
+  "_instalacion": "n8n > Settings > Community Nodes > Install > n8n-nodes-evolution-api",
+  "_importante": "NUNCA usar HTTP Request para Evolution API. SIEMPRE usar el nodo nativo n8n-nodes-evolution-api.evolutionApi",
+
+  "nodo_enviar_texto": {
+    "_type": "n8n-nodes-evolution-api.evolutionApi",
+    "_typeVersion": 1,
+    "resource": "messages-api",
+    "operation": "send-text",
+    "instanceName": "={{ $env.EVOLUTION_INSTANCE }}",
+    "remoteJid": "={{ $json.telefono }}",
+    "messageText": "={{ $json.mensaje }}",
+    "options_message": {
+      "delay": 1200
     },
-    "body": {
-      "number": "={{ $json.numero }}",
-      "text": "={{ $json.mensaje }}"
+    "_credentials": {
+      "evolutionApi": { "id": "...", "name": "Evolution API account" }
     }
   },
-  "patron_envio_imagen": {
-    "method": "POST",
-    "url": "https://={{ $env.EVOLUTION_HOST }}/message/sendMedia/={{ $env.EVOLUTION_INSTANCE }}",
-    "headers": {
-      "apikey": "={{ $env.EVOLUTION_API_KEY }}",
-      "Content-Type": "application/json"
+
+  "nodo_enviar_imagen": {
+    "_type": "n8n-nodes-evolution-api.evolutionApi",
+    "_typeVersion": 1,
+    "resource": "messages-api",
+    "operation": "send-image",
+    "instanceName": "={{ $env.EVOLUTION_INSTANCE }}",
+    "remoteJid": "={{ $json.telefono }}"
+  },
+
+  "nodo_enviar_audio": {
+    "_type": "n8n-nodes-evolution-api.evolutionApi",
+    "_typeVersion": 1,
+    "resource": "messages-api",
+    "operation": "send-audio",
+    "instanceName": "={{ $env.EVOLUTION_INSTANCE }}",
+    "remoteJid": "={{ $json.telefono }}"
+  },
+
+  "nodo_enviar_documento": {
+    "_type": "n8n-nodes-evolution-api.evolutionApi",
+    "_typeVersion": 1,
+    "resource": "messages-api",
+    "operation": "send-document",
+    "instanceName": "={{ $env.EVOLUTION_INSTANCE }}",
+    "remoteJid": "={{ $json.telefono }}"
+  },
+
+  "nodo_enviar_lista": {
+    "_type": "n8n-nodes-evolution-api.evolutionApi",
+    "_typeVersion": 1,
+    "resource": "messages-api",
+    "operation": "send-list",
+    "instanceName": "={{ $env.EVOLUTION_INSTANCE }}",
+    "remoteJid": "={{ $json.telefono }}"
+  },
+
+  "nodo_enviar_botones": {
+    "_type": "n8n-nodes-evolution-api.evolutionApi",
+    "_typeVersion": 1,
+    "resource": "messages-api",
+    "operation": "send-buttons",
+    "instanceName": "={{ $env.EVOLUTION_INSTANCE }}",
+    "remoteJid": "={{ $json.telefono }}"
+  },
+
+  "nodo_verificar_numero": {
+    "_type": "n8n-nodes-evolution-api.evolutionApi",
+    "_typeVersion": 1,
+    "resource": "chat",
+    "operation": "verificar-numero",
+    "instanceName": "={{ $env.EVOLUTION_INSTANCE }}"
+  },
+
+  "webhook_entrada_datos": {
+    "_nota": "El trigger sigue siendo n8n-nodes-base.webhook. No existe nodo trigger nativo de Evolution en el paquete.",
+    "numero_remitente": "={{ $json.body.data.key.remoteJid }}",
+    "mensaje_texto": "={{ $json.body.data.message?.conversation || $json.body.data.message?.extendedTextMessage?.text || '' }}",
+    "mensaje_imagen_caption": "={{ $json.body.data.message?.imageMessage?.caption }}",
+    "tipo_evento": "={{ $json.body.event }}",
+    "nombre_remitente": "={{ $json.body.data.pushName }}",
+    "es_mio": "={{ $json.body.data.key.fromMe }}"
+  },
+
+  "filtro_mensajes_entrantes": {
+    "_tipo": "IF node v2",
+    "_condiciones": [
+      { "campo": "{{ $json.body.event }}", "operador": "equals", "valor": "messages.upsert" },
+      { "campo": "{{ $json.body.data.key.fromMe }}", "operador": "equals", "valor": false }
+    ],
+    "_combinator": "and"
+  },
+
+  "credencial_evolutionApi": {
+    "_tipo": "evolutionApi",
+    "_campos_en_n8n": {
+      "apiUrl": "https://tu-evolution-host.com",
+      "apiKey": "tu-api-key-global"
     },
-    "body": {
-      "number": "={{ $json.numero }}",
-      "mediatype": "image",
-      "mimetype": "image/jpeg",
-      "media": "={{ $json.url_imagen }}",
-      "caption": "={{ $json.caption }}"
-    }
+    "_nota": "La credencial contiene la URL base y la API Key. El instanceName va como parámetro en cada nodo."
   },
-  "filtro_solo_mensajes": {
-    "tipo": "IF",
-    "condicion": "$json.body.event === 'messages.upsert' && !$json.body.data.key.fromMe"
+
+  "operaciones_disponibles": {
+    "messages-api": ["send-text", "send-image", "send-video", "send-audio", "send-document", "send-poll", "send-contact", "send-list", "send-buttons", "send-pix", "send-stories", "send-reaction"],
+    "chat": ["verificar-numero", "ler-mensagem", "buscar-foto-perfil", "bloquear-contato", "buscar-contatos", "procurar-mensagens"],
+    "groups": ["criar-grupo", "atualizar-membros", "encontrar-participantes", "buscar-link-convite"],
+    "instances": ["criar-instancia", "gerar-qr-code", "buscar-instancia", "desconectar-whatsapp", "deletar-instancia"],
+    "events": ["webhook", "rabbitmq"],
+    "integrations": ["chatwoot", "evolution-bot", "typebot", "dify", "flowise"]
   },
+
   "variables_entorno_necesarias": [
-    "EVOLUTION_HOST",
-    "EVOLUTION_INSTANCE",
-    "EVOLUTION_API_KEY"
+    "EVOLUTION_INSTANCE — nombre de la instancia (va en el parámetro instanceName del nodo)"
   ]
 }

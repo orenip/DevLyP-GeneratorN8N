@@ -12,6 +12,7 @@ Cada JSON generado debe poder importarse directamente en n8n sin errores y funci
 4. **SIEMPRE** guardar en `flujos/<nombre-proyecto>/<nombre-flujo>.json`.
 5. Los nombres de fichero usan kebab-case: `webhook-whatsapp-respuesta-ia.json`.
 6. **SIEMPRE** incluir el campo `"meta"` en el JSON con autor, fecha y descripción.
+7. **SIEMPRE** usar el nodo nativo/community de cada servicio cuando exista. **NUNCA** usar HTTP Request si hay nodo propio disponible. Ejemplos: Evolution API → `n8n-nodes-evolution-api.evolutionApi`, Telegram → `n8n-nodes-base.telegram`, Slack → `n8n-nodes-base.slack`, Gmail → `n8n-nodes-base.gmail`, Stripe → `n8n-nodes-base.stripe`, Notion → `n8n-nodes-base.notion`. HTTP Request solo para APIs sin nodo nativo.
 
 ## Versión de n8n objetivo
 - Versión: última estable (self-hosted en Render)
