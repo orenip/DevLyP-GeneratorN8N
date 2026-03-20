@@ -1,0 +1,74 @@
+{
+  "_plantilla": "gmail-sheets",
+  "_descripcion": "Patrones para Gmail y Google Sheets",
+  "gmail_enviar": {
+    "tipo_nodo": "n8n-nodes-base.gmail",
+    "typeVersion": "2.1",
+    "operation": "send",
+    "parametros": {
+      "toList": "={{ $json.destinatario }}",
+      "subject": "={{ $json.asunto }}",
+      "message": "={{ $json.cuerpo_html }}",
+      "options": {
+        "replyTo": "={{ $env.EMAIL_REPLY_TO }}",
+        "attachmentsUi": { "attachmentsBinary": [] }
+      }
+    },
+    "credencial": "gmailOAuth2"
+  },
+  "gmail_leer": {
+    "operation": "getAll",
+    "parametros": {
+      "returnAll": false,
+      "limit": 10,
+      "filters": {
+        "q": "is:unread",
+        "labelIds": ["INBOX"]
+      }
+    }
+  },
+  "sheets_leer": {
+    "tipo_nodo": "n8n-nodes-base.googleSheets",
+    "typeVersion": "4.5",
+    "operation": "read",
+    "parametros": {
+      "documentId": "={{ $env.SHEETS_DOCUMENT_ID }}",
+      "sheetName": "Hoja 1",
+      "filtersUI": {
+        "values": [
+          { "lookupColumn": "email", "lookupValue": "={{ $json.email }}" }
+        ]
+      }
+    },
+    "credencial": "googleSheetsOAuth2Api"
+  },
+  "sheets_append": {
+    "operation": "append",
+    "parametros": {
+      "documentId": "={{ $env.SHEETS_DOCUMENT_ID }}",
+      "sheetName": "Hoja 1",
+      "columns": {
+        "mappingMode": "autoMapInputData"
+      },
+      "options": { "useAppend": true }
+    }
+  },
+  "sheets_update": {
+    "operation": "update",
+    "parametros": {
+      "documentId": "={{ $env.SHEETS_DOCUMENT_ID }}",
+      "sheetName": "Hoja 1",
+      "columns": {
+        "mappingMode": "defineBelow",
+        "value": {
+          "matchingColumns": ["id"],
+          "columns": []
+        }
+      }
+    }
+  },
+  "variables_entorno_necesarias": {
+    "gmail": ["EMAIL_REPLY_TO"],
+    "sheets": ["SHEETS_DOCUMENT_ID"]
+  }
+}

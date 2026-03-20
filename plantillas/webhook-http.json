@@ -1,0 +1,57 @@
+{
+  "_plantilla": "webhook-http",
+  "_descripcion": "Patrones para webhooks entrantes genéricos y peticiones HTTP salientes",
+  "webhook_entrada": {
+    "tipo_nodo": "n8n-nodes-base.webhook",
+    "typeVersion": 2,
+    "modos": {
+      "test": "Webhook URL de test (requiere activar manualmente)",
+      "production": "Webhook URL de producción (activo cuando el workflow está activo)"
+    },
+    "metodos": ["GET", "POST", "PUT", "DELETE"],
+    "acceso_datos": {
+      "body": "$json.body",
+      "query_params": "$json.query",
+      "headers": "$json.headers",
+      "path": "$json.params"
+    }
+  },
+  "responder_webhook": {
+    "tipo_nodo": "n8n-nodes-base.respondToWebhook",
+    "typeVersion": "1.1",
+    "respuesta_json": {
+      "responseCode": 200,
+      "responseData": "={{ JSON.stringify($json.respuesta) }}",
+      "options": { "responseHeaders": { "Content-Type": "application/json" } }
+    },
+    "respuesta_texto": {
+      "responseCode": 200,
+      "responseData": "OK"
+    }
+  },
+  "http_request_base": {
+    "tipo_nodo": "n8n-nodes-base.httpRequest",
+    "typeVersion": "4.2",
+    "parametros": {
+      "method": "POST",
+      "url": "https://api.ejemplo.com/endpoint",
+      "sendHeaders": true,
+      "headerParameters": {
+        "parameters": [
+          { "name": "Content-Type", "value": "application/json" },
+          { "name": "Authorization", "value": "Bearer {{ $env.API_TOKEN }}" }
+        ]
+      },
+      "sendBody": true,
+      "bodyParameters": {
+        "parameters": [
+          { "name": "campo", "value": "={{ $json.valor }}" }
+        ]
+      }
+    }
+  },
+  "patrones_error_http": {
+    "nota": "Usar 'Continue On Fail' en el nodo HTTP + IF después para manejar errores",
+    "check_status": "$json.error !== undefined || $response.statusCode >= 400"
+  }
+}

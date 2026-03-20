@@ -1,0 +1,49 @@
+{
+  "_plantilla": "whatsapp-evolution",
+  "_descripcion": "Plantilla base para recibir y responder mensajes WhatsApp via Evolution API",
+  "_nodos_incluidos": ["Webhook Evolution", "IF Tipo Mensaje", "Extraer Datos", "Enviar Respuesta WhatsApp"],
+  "patron_webhook_entrada": {
+    "numero_remitente": "$json.body.data.key.remoteJid",
+    "mensaje_texto": "$json.body.data.message.conversation",
+    "mensaje_imagen": "$json.body.data.message.imageMessage.caption",
+    "tipo_evento": "$json.body.event",
+    "nombre_remitente": "$json.body.data.pushName",
+    "instancia": "$json.body.instance"
+  },
+  "patron_envio_texto": {
+    "method": "POST",
+    "url": "https://={{ $env.EVOLUTION_HOST }}/message/sendText/={{ $env.EVOLUTION_INSTANCE }}",
+    "headers": {
+      "apikey": "={{ $env.EVOLUTION_API_KEY }}",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "number": "={{ $json.numero }}",
+      "text": "={{ $json.mensaje }}"
+    }
+  },
+  "patron_envio_imagen": {
+    "method": "POST",
+    "url": "https://={{ $env.EVOLUTION_HOST }}/message/sendMedia/={{ $env.EVOLUTION_INSTANCE }}",
+    "headers": {
+      "apikey": "={{ $env.EVOLUTION_API_KEY }}",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "number": "={{ $json.numero }}",
+      "mediatype": "image",
+      "mimetype": "image/jpeg",
+      "media": "={{ $json.url_imagen }}",
+      "caption": "={{ $json.caption }}"
+    }
+  },
+  "filtro_solo_mensajes": {
+    "tipo": "IF",
+    "condicion": "$json.body.event === 'messages.upsert' && !$json.body.data.key.fromMe"
+  },
+  "variables_entorno_necesarias": [
+    "EVOLUTION_HOST",
+    "EVOLUTION_INSTANCE",
+    "EVOLUTION_API_KEY"
+  ]
+}

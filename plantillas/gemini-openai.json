@@ -1,0 +1,48 @@
+{
+  "_plantilla": "gemini-openai",
+  "_descripcion": "Patrones para llamadas a Gemini API y OpenAI",
+  "gemini_flash": {
+    "method": "POST",
+    "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+    "qs": { "key": "={{ $env.GEMINI_API_KEY }}" },
+    "body": {
+      "contents": [
+        { "parts": [{ "text": "={{ $json.prompt }}" }] }
+      ],
+      "generationConfig": {
+        "temperature": 0.7,
+        "maxOutputTokens": 1024
+      }
+    },
+    "respuesta_path": "candidates[0].content.parts[0].text"
+  },
+  "gemini_con_historial": {
+    "body": {
+      "contents": "={{ $json.historial_mensajes }}",
+      "systemInstruction": {
+        "parts": [{ "text": "={{ $json.system_prompt }}" }]
+      }
+    }
+  },
+  "openai_chat": {
+    "method": "POST",
+    "url": "https://api.openai.com/v1/chat/completions",
+    "headers": {
+      "Authorization": "Bearer {{ $env.OPENAI_API_KEY }}",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "model": "gpt-4o-mini",
+      "messages": [
+        { "role": "system", "content": "={{ $json.system_prompt }}" },
+        { "role": "user", "content": "={{ $json.user_message }}" }
+      ],
+      "temperature": 0.7
+    },
+    "respuesta_path": "choices[0].message.content"
+  },
+  "variables_entorno_necesarias": {
+    "gemini": ["GEMINI_API_KEY"],
+    "openai": ["OPENAI_API_KEY"]
+  }
+}

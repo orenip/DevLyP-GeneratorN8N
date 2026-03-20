@@ -1,0 +1,45 @@
+{
+  "_plantilla": "supabase-postgres",
+  "_descripcion": "Patrones para Supabase REST API y PostgreSQL directo",
+  "supabase_insert": {
+    "method": "POST",
+    "url": "https://={{ $env.SUPABASE_URL }}/rest/v1/={{ $json.tabla }}",
+    "headers": {
+      "apikey": "={{ $env.SUPABASE_ANON_KEY }}",
+      "Authorization": "Bearer {{ $env.SUPABASE_ANON_KEY }}",
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    },
+    "body": "={{ $json.datos }}"
+  },
+  "supabase_select": {
+    "method": "GET",
+    "url": "https://={{ $env.SUPABASE_URL }}/rest/v1/={{ $json.tabla }}?={{ $json.filtros }}",
+    "headers": {
+      "apikey": "={{ $env.SUPABASE_ANON_KEY }}",
+      "Authorization": "Bearer {{ $env.SUPABASE_ANON_KEY }}"
+    },
+    "ejemplo_filtro": "columna=eq.valor&select=*&order=created_at.desc&limit=10"
+  },
+  "supabase_update": {
+    "method": "PATCH",
+    "url": "https://={{ $env.SUPABASE_URL }}/rest/v1/={{ $json.tabla }}?id=eq.={{ $json.id }}",
+    "headers": {
+      "apikey": "={{ $env.SUPABASE_ANON_KEY }}",
+      "Authorization": "Bearer {{ $env.SUPABASE_ANON_KEY }}",
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    }
+  },
+  "postgres_query": {
+    "operation": "executeQuery",
+    "query": "SELECT * FROM tabla WHERE condicion = $1",
+    "additionalFields": {
+      "queryParams": "={{ [$json.valor] }}"
+    }
+  },
+  "variables_entorno_necesarias": {
+    "supabase": ["SUPABASE_URL", "SUPABASE_ANON_KEY"],
+    "postgres_directo": ["POSTGRES_HOST", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD"]
+  }
+}

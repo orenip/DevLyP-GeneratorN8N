@@ -1,0 +1,49 @@
+{
+  "_plantilla": "stripe",
+  "_descripcion": "Patrones para webhooks de Stripe y llamadas a la API",
+  "webhook_stripe": {
+    "nota": "El webhook de Stripe llega con header stripe-signature para verificación",
+    "header_firma": "$request.headers['stripe-signature']",
+    "eventos_comunes": {
+      "pago_completado": "payment_intent.succeeded",
+      "checkout_completado": "checkout.session.completed",
+      "suscripcion_creada": "customer.subscription.created",
+      "suscripcion_cancelada": "customer.subscription.deleted",
+      "factura_pagada": "invoice.payment_succeeded",
+      "factura_fallida": "invoice.payment_failed"
+    },
+    "paths_datos": {
+      "tipo_evento": "$json.body.type",
+      "datos_objeto": "$json.body.data.object",
+      "email_cliente": "$json.body.data.object.customer_details.email",
+      "importe_cents": "$json.body.data.object.amount_total",
+      "moneda": "$json.body.data.object.currency",
+      "metadata": "$json.body.data.object.metadata",
+      "session_id": "$json.body.data.object.id"
+    }
+  },
+  "stripe_api_get_session": {
+    "method": "GET",
+    "url": "https://api.stripe.com/v1/checkout/sessions/={{ $json.session_id }}",
+    "headers": {
+      "Authorization": "Bearer {{ $env.STRIPE_SECRET_KEY }}"
+    }
+  },
+  "stripe_api_get_customer": {
+    "method": "GET",
+    "url": "https://api.stripe.com/v1/customers/={{ $json.customer_id }}",
+    "headers": {
+      "Authorization": "Bearer {{ $env.STRIPE_SECRET_KEY }}"
+    }
+  },
+  "responder_webhook_200": {
+    "nota": "Stripe requiere respuesta 200 en menos de 30s o reintentará el webhook",
+    "tipo_nodo": "Respond to Webhook",
+    "status_code": 200,
+    "body": { "received": true }
+  },
+  "variables_entorno_necesarias": [
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET"
+  ]
+}
