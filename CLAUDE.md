@@ -12,7 +12,8 @@ Cada JSON generado debe poder importarse directamente en n8n sin errores y funci
 4. **SIEMPRE** guardar en `flujos/<nombre-proyecto>/<nombre-flujo>.json`.
 5. Los nombres de fichero usan kebab-case: `webhook-whatsapp-respuesta-ia.json`.
 6. **SIEMPRE** incluir el campo `"meta"` en el JSON con autor, fecha y descripción.
-7. **SIEMPRE** usar el nodo nativo/community de cada servicio cuando exista. **NUNCA** usar HTTP Request si hay nodo propio disponible. Ejemplos: Evolution API → `n8n-nodes-evolution-api.evolutionApi`, Telegram → `n8n-nodes-base.telegram`, Slack → `n8n-nodes-base.slack`, Gmail → `n8n-nodes-base.gmail`, Stripe → `n8n-nodes-base.stripe`, Notion → `n8n-nodes-base.notion`. HTTP Request solo para APIs sin nodo nativo.
+7. **SIEMPRE** usar el nodo nativo/community de cada servicio cuando exista. **NUNCA** usar HTTP Request si hay nodo propio disponible. Ver tabla de integraciones arriba. HTTP Request solo para APIs sin nodo nativo.
+8. **SplitInBatches (Loop Over Items):** output **0 = Done** (fin del bucle, conectar a lo que sigue después), output **1 = Loop** (procesar cada item). Los nodos al final del bucle conectan de vuelta al input de SplitInBatches.
 
 ## Versión de n8n objetivo
 - Versión: última estable (self-hosted en Render)
@@ -23,19 +24,22 @@ Cada JSON generado debe poder importarse directamente en n8n sin errores y funci
 
 | Integración | Plantilla base | Nodo n8n |
 |---|---|---|
-| WhatsApp via Evolution API | plantillas/whatsapp-evolution.json | HTTP Request |
-| Webhooks entrantes | plantillas/webhook-http.json | Webhook |
-| Gmail | plantillas/gmail-sheets.json | Gmail node |
-| Google Sheets | plantillas/gmail-sheets.json | Google Sheets node |
-| OpenAI / Gemini | plantillas/gemini-openai.json | HTTP Request o OpenAI node |
-| Supabase / PostgreSQL | plantillas/supabase-postgres.json | Postgres node / HTTP Request |
-| Stripe | plantillas/stripe.json | HTTP Request + Webhook |
-| Telegram Bot | plantillas/telegram-bot.json | Telegram node |
-| Slack | plantillas/slack-notion.json | Slack node |
-| Notion | plantillas/slack-notion.json | Notion node |
-| AI Agent con tools y memoria | plantillas/ai-agent-tools.json | LangChain Agent |
-| Loop / Procesamiento en lotes | plantillas/loop-batch-errores.json | SplitInBatches |
-| Manejo de errores centralizado | plantillas/loop-batch-errores.json | Error Trigger |
+| WhatsApp via Evolution API | plantillas/whatsapp-evolution.json | `n8n-nodes-evolution-api.evolutionApi` (community) |
+| Webhooks entrantes | plantillas/webhook-http.json | `n8n-nodes-base.webhook` |
+| Gmail | plantillas/gmail-sheets.json | `n8n-nodes-base.gmail` |
+| Google Sheets | plantillas/gmail-sheets.json | `n8n-nodes-base.googleSheets` |
+| Google Cloud Firestore | — | `n8n-nodes-base.googleFirebaseCloudFirestore` |
+| Google Firebase Realtime DB | — | `n8n-nodes-base.googleFirebaseRealtimeDatabase` |
+| OpenAI / Gemini LLM | plantillas/gemini-openai.json | `@n8n/n8n-nodes-langchain.lmChatGoogleGemini` / `lmChatOpenAi` |
+| Supabase | plantillas/supabase-postgres.json | `n8n-nodes-base.supabase` |
+| PostgreSQL | plantillas/supabase-postgres.json | `n8n-nodes-base.postgres` |
+| Stripe | plantillas/stripe.json | `n8n-nodes-base.stripe` |
+| Telegram Bot | plantillas/telegram-bot.json | `n8n-nodes-base.telegram` |
+| Slack | plantillas/slack-notion.json | `n8n-nodes-base.slack` |
+| Notion | plantillas/slack-notion.json | `n8n-nodes-base.notion` |
+| AI Agent con tools y memoria | plantillas/ai-agent-tools.json | `@n8n/n8n-nodes-langchain.agent` |
+| Loop / Procesamiento en lotes | plantillas/loop-batch-errores.json | `n8n-nodes-base.splitInBatches` |
+| Manejo de errores centralizado | plantillas/loop-batch-errores.json | `n8n-nodes-base.errorTrigger` |
 | RAG / Vector Store / Base de conocimiento | plantillas/rag-vectorstore.json | LangChain Chain + VectorStore |
 | Casos de uso populares (email IA, lead scoring, ecommerce, ETL...) | plantillas/casos-uso-populares.json | Múltiples |
 
